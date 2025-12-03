@@ -90,10 +90,10 @@ serve(async (req) => {
 
   try {
     const { messages, cartContext } = await req.json();
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Add cart context to the system prompt if provided
@@ -102,36 +102,59 @@ serve(async (req) => {
       contextualPrompt += `\n\nCURRENT CART STATE:\n${JSON.stringify(cartContext, null, 2)}`;
     }
 
-    console.log('Sending request to Claude API...');
+    console.log('Sending request to Lovable AI Gateway...');
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: contextualPrompt,
-        messages: messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: contextualPrompt },
+          ...messages.map((m: { role: string; content: string }) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
-      throw new Error(`Claude API error: ${response.status}`);
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            message: "I'm currently experiencing high demand. Please try again in a moment.",
+            actions: [],
+            error: 'Rate limit exceeded'
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            message: "The AI service needs additional credits. Please check your Lovable workspace settings.",
+            actions: [],
+            error: 'Payment required'
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`Lovable AI error: ${response.status}`);
     }
 
     const data = await response.json();
-    const assistantMessage = data.content[0].text;
+    const assistantMessage = data.choices[0].message.content;
 
-    console.log('Claude response:', assistantMessage);
+    console.log('Lovable AI response:', assistantMessage);
 
     // Try to parse the JSON response
     let parsedResponse;
