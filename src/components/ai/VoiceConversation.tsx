@@ -114,6 +114,22 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return "Item removed from cart";
     },
     
+    removeFromCartByTitle: (params: { title: string }) => {
+      console.log('Removing from cart by title:', params.title);
+      const cartState = useCartStore.getState();
+      const searchTitle = params.title.toLowerCase();
+      const item = cartState.items.find(i => 
+        i.book.title.toLowerCase().includes(searchTitle) ||
+        searchTitle.includes(i.book.title.toLowerCase())
+      );
+      if (item) {
+        cartState.removeItem(item.book.id);
+        toast({ title: 'Removed', description: `"${item.book.title}" removed from cart` });
+        return `Removed "${item.book.title}" from cart`;
+      }
+      return `Could not find "${params.title}" in cart`;
+    },
+    
     clearCart: () => {
       console.log('Clearing cart');
       useCartStore.getState().clearCart();
@@ -136,6 +152,27 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         return `Updated "${item.book.title}" quantity to ${params.quantity}`;
       }
       return "Item not found in cart";
+    },
+    
+    updateCartQuantityByTitle: (params: { title: string; quantity: number }) => {
+      console.log('Updating quantity by title:', params.title, params.quantity);
+      const cartState = useCartStore.getState();
+      const searchTitle = params.title.toLowerCase();
+      const item = cartState.items.find(i => 
+        i.book.title.toLowerCase().includes(searchTitle) ||
+        searchTitle.includes(i.book.title.toLowerCase())
+      );
+      if (item) {
+        if (params.quantity <= 0) {
+          cartState.removeItem(item.book.id);
+          toast({ title: 'Removed', description: `"${item.book.title}" removed from cart` });
+          return `Removed "${item.book.title}" from cart`;
+        }
+        cartState.updateQuantity(item.book.id, params.quantity);
+        toast({ title: 'Updated', description: `"${item.book.title}" quantity set to ${params.quantity}` });
+        return `Updated "${item.book.title}" quantity to ${params.quantity}`;
+      }
+      return `Could not find "${params.title}" in cart`;
     },
     
     searchBooks: (params: { query: string }) => {
