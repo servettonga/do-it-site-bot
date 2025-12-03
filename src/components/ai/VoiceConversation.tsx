@@ -159,7 +159,9 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         itemCount: cartItems.length,
         total: total.toFixed(2),
         items: cartItems.map(item => ({
+          bookId: item.book.id,
           title: item.book.title,
+          author: item.book.author,
           quantity: item.quantity,
           price: item.book.price
         }))
