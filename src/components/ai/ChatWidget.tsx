@@ -93,7 +93,7 @@ export function ChatWidget() {
       });
 
       // Speak the response if voice is enabled
-      if (voiceEnabled && isVoice) {
+      if (voiceEnabled) {
         await speak(response);
       }
     } catch (error) {
