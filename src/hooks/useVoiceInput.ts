@@ -65,11 +65,21 @@ declare global {
 }
 
 export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInputReturn {
-  const { onResult, onError, continuous = false, language = 'en-US' } = options;
+  const { continuous = false, language = 'en-US' } = options;
   
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // Use refs for callbacks to avoid recreation of recognition object
+  const onResultRef = useRef(options.onResult);
+  const onErrorRef = useRef(options.onError);
+  
+  // Keep refs updated
+  useEffect(() => {
+    onResultRef.current = options.onResult;
+    onErrorRef.current = options.onError;
+  }, [options.onResult, options.onError]);
   
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
@@ -104,16 +114,22 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
       const currentTranscript = finalTranscript || interimTranscript;
       setTranscript(currentTranscript);
 
-      if (finalTranscript && onResult) {
-        onResult(finalTranscript.trim());
+      if (finalTranscript && onResultRef.current) {
+        onResultRef.current(finalTranscript.trim());
       }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      // Don't log or show error for 'aborted' as it's intentional
+      if (event.error === 'aborted') {
+        setIsListening(false);
+        return;
+      }
+      
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
       
-      if (onError) {
+      if (onErrorRef.current) {
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
           case 'no-speech':
@@ -131,7 +147,7 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
           default:
             errorMessage = `Error: ${event.error}`;
         }
-        onError(errorMessage);
+        onErrorRef.current(errorMessage);
       }
     };
 
@@ -146,11 +162,11 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
         recognitionRef.current.abort();
       }
     };
-  }, [isSupported, continuous, language, onResult, onError]);
+  }, [isSupported, continuous, language]);
 
   const startListening = useCallback(() => {
     if (!isSupported || !recognitionRef.current) {
-      onError?.('Speech recognition is not supported in this browser.');
+      onErrorRef.current?.('Speech recognition is not supported in this browser.');
       return;
     }
 
@@ -158,9 +174,21 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
     try {
       recognitionRef.current.start();
     } catch (error) {
-      console.error('Error starting speech recognition:', error);
+      // Handle "already started" error gracefully
+      if (error instanceof Error && error.message.includes('already started')) {
+        recognitionRef.current.stop();
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start();
+          } catch (e) {
+            console.error('Error restarting speech recognition:', e);
+          }
+        }, 100);
+      } else {
+        console.error('Error starting speech recognition:', error);
+      }
     }
-  }, [isSupported, onError]);
+  }, [isSupported]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
