@@ -21,7 +21,7 @@ export function ChatWidget() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [mode, setMode] = useState<"voice" | "text">("voice");
   const [showNotification, setShowNotification] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Hide notification after opening chat or after timeout
   useEffect(() => {
@@ -76,8 +76,11 @@ export function ChatWidget() {
   });
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -241,7 +244,7 @@ export function ChatWidget() {
           ) : (
             /* Text Mode - Secondary */
             <>
-              <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">

@@ -141,8 +141,8 @@ export default function Browse() {
           Price Range: ${priceRange[0]} - ${priceRange[1]}
         </h4>
         <Slider
-          value={priceRange}
-          onValueChange={(value) => setPriceRange(value as [number, number])}
+          defaultValue={priceRange}
+          onValueCommit={(value) => setPriceRange(value as [number, number])}
           min={0}
           max={30}
           step={1}
