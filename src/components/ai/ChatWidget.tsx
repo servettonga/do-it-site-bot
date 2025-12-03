@@ -23,6 +23,7 @@ export function ChatWidget() {
   const [mode, setMode] = useState<"voice" | "text">("voice");
   const [showNotification, setShowNotification] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Hide notification after opening chat or after timeout
   useEffect(() => {
@@ -114,6 +115,9 @@ export function ChatWidget() {
       if (voiceEnabled) {
         await speak(response);
       }
+      
+      // Refocus input after response
+      setTimeout(() => inputRef.current?.focus(), 100);
     } catch (error) {
       toast({
         title: "Error",
@@ -347,6 +351,7 @@ export function ChatWidget() {
                     </Button>
                   )}
                   <Input
+                    ref={inputRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={handleKeyPress}

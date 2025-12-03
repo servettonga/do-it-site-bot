@@ -501,6 +501,27 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return "Navigating to wishlist";
     },
     
+    addAllWishlistToCart: () => {
+      console.log('Adding all wishlist items to cart');
+      const wishlistState = useWishlistStore.getState();
+      const cartState = useCartStore.getState();
+      const items = wishlistState.items;
+      
+      if (items.length === 0) {
+        return "Your wishlist is empty. Nothing to add to cart.";
+      }
+      
+      items.forEach(book => cartState.addItem(book, 1));
+      wishlistState.clearWishlist();
+      
+      toast({ 
+        title: 'Added to Cart', 
+        description: `${items.length} item(s) moved from wishlist to cart` 
+      });
+      
+      return `Added ${items.length} item(s) from wishlist to cart. Your wishlist is now empty.`;
+    },
+    
     scrollPage: (params: { direction: 'up' | 'down'; amount?: 'small' | 'medium' | 'large' | 'top' | 'bottom' | 'browse' }) => {
       const amount = params.amount || 'medium';
       console.log('Scrolling:', params.direction, amount);

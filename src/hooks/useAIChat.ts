@@ -83,8 +83,17 @@ export function useAIChat() {
 
         case 'filter': {
           const genre = action.data.genre as string;
-          const path = genre ? `/browse?genre=${genre}` : '/browse';
+          const priceRange = action.data.priceRange as [number, number] | undefined;
+          const params = new URLSearchParams(window.location.search);
+          if (genre) params.set('genre', genre);
+          if (priceRange && priceRange[1]) params.set('maxPrice', priceRange[1].toString());
+          if (priceRange && priceRange[0]) params.set('minPrice', priceRange[0].toString());
+          const path = params.toString() ? `/browse?${params.toString()}` : '/browse';
           navigate(path);
+          toast({
+            title: 'Filters applied',
+            description: `Showing books${genre ? ` in ${genre}` : ''}${priceRange ? ` under $${priceRange[1]}` : ''}`,
+          });
           break;
         }
 
@@ -142,6 +151,24 @@ export function useAIChat() {
             title: 'Wishlist cleared',
             description: 'All items have been removed from your wishlist.',
           });
+          break;
+        }
+
+        case 'add_wishlist_to_cart': {
+          const wishlistBooks = wishlistItems;
+          if (wishlistBooks.length === 0) {
+            toast({
+              title: 'Wishlist empty',
+              description: 'Your wishlist is empty.',
+            });
+          } else {
+            wishlistBooks.forEach(book => addItem(book, 1));
+            clearWishlist();
+            toast({
+              title: 'Added to cart',
+              description: `${wishlistBooks.length} item(s) moved from wishlist to cart.`,
+            });
+          }
           break;
         }
 
@@ -264,6 +291,8 @@ function getActionDescription(action: { type: AIActionType; data: Record<string,
       return `Removing "${action.data.bookTitle}" from wishlist`;
     case 'clear_wishlist':
       return 'Clearing wishlist';
+    case 'add_wishlist_to_cart':
+      return 'Adding all wishlist items to cart';
     default:
       return `Executing ${action.type}`;
   }

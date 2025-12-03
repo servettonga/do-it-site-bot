@@ -31,7 +31,8 @@ export type AIActionType =
   | 'thinking'
   | 'add_to_wishlist'
   | 'remove_from_wishlist'
-  | 'clear_wishlist';
+  | 'clear_wishlist'
+  | 'add_wishlist_to_cart';
 
 export const actionTypeLabels: Record<AIActionType, string> = {
   search: 'Search',
@@ -49,4 +50,5 @@ export const actionTypeLabels: Record<AIActionType, string> = {
   add_to_wishlist: 'Add to Wishlist',
   remove_from_wishlist: 'Remove from Wishlist',
   clear_wishlist: 'Clear Wishlist',
+  add_wishlist_to_cart: 'Add Wishlist to Cart',
 };

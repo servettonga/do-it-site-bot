@@ -60,7 +60,7 @@ Always respond in JSON format with this structure:
   "message": "Your friendly response to the user",
   "actions": [
     {
-      "type": "search" | "add_to_cart" | "remove_from_cart" | "navigate" | "view_details" | "clear_cart" | "recommend" | "filter" | "add_to_wishlist" | "remove_from_wishlist" | "clear_wishlist",
+      "type": "search" | "add_to_cart" | "remove_from_cart" | "navigate" | "view_details" | "clear_cart" | "recommend" | "filter" | "add_to_wishlist" | "remove_from_wishlist" | "clear_wishlist" | "add_wishlist_to_cart",
       "data": { ... action-specific data ... }
     }
   ]
@@ -73,6 +73,7 @@ ACTION DATA FORMATS:
 - add_to_wishlist: { "bookId": "id", "bookTitle": "title" }
 - remove_from_wishlist: { "bookId": "id", "bookTitle": "title" }
 - clear_wishlist: {}
+- add_wishlist_to_cart: {} (moves all wishlist items to cart)
 - navigate: { "path": "/browse" | "/cart" | "/checkout" | "/wishlist" | "/book/[id]" }
 - view_details: { "bookId": "id", "bookTitle": "title" }
 - clear_cart: {}
@@ -87,7 +88,10 @@ GUIDELINES:
 - Always confirm before adding items to cart
 - Keep responses concise but informative
 - The wishlist is for saving books users want to remember but aren't ready to purchase yet
-- When users say "save for later" or "add to wishlist", use wishlist actions`;
+- When users say "save for later" or "add to wishlist", use wishlist actions
+- When users ask to "add all wishlist to cart" or "buy everything in wishlist", use add_wishlist_to_cart action
+- IMPORTANT: When users ask to filter by price (e.g., "under $15", "less than $20"), ALWAYS include a filter action with the priceRange to actually apply the filter on the page
+- IMPORTANT: When filtering, ALWAYS return a filter action - don't just describe results, actually filter the page`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
