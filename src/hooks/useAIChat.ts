@@ -86,8 +86,32 @@ export function useAIChat() {
           break;
         }
 
+        case 'search': {
+          const query = action.data.query as string;
+          const results = action.data.results as string[];
+          if (results && results.length > 0) {
+            // Navigate to browse with search query
+            navigate(`/browse?search=${encodeURIComponent(query)}`);
+            toast({
+              title: 'Search results',
+              description: `Found ${results.length} book(s) matching "${query}"`,
+            });
+          }
+          break;
+        }
+
+        case 'recommend': {
+          const books = action.data.books as Array<{ id: string; title: string; reason: string }>;
+          if (books && books.length > 0) {
+            toast({
+              title: 'Recommendations ready',
+              description: `Found ${books.length} book(s) you might enjoy!`,
+            });
+          }
+          break;
+        }
+
         default:
-          // For search, recommend, etc. - no direct action needed
           break;
       }
 
