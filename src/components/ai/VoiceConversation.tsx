@@ -1,11 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useConversation } from '@11labs/react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, PhoneOff, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioWaveform } from './AudioWaveform';
+import { useCartStore } from '@/stores/cartStore';
+import { getBookById, books } from '@/data/books';
 
 interface VoiceConversationProps {
   agentId: string;
@@ -17,8 +20,126 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
+  
+  const navigate = useNavigate();
+  const { addItem, removeItem, clearCart, items: cartItems } = useCartStore();
+
+  // Client tools that the ElevenLabs agent can call
+  const clientTools = {
+    navigate: (params: { path: string }) => {
+      console.log('Navigating to:', params.path);
+      navigate(params.path);
+      toast({ title: 'Navigating', description: `Going to ${params.path}` });
+      return `Navigated to ${params.path}`;
+    },
+    
+    viewBook: (params: { bookId: string }) => {
+      console.log('Viewing book:', params.bookId);
+      const book = getBookById(params.bookId);
+      if (book) {
+        navigate(`/book/${params.bookId}`);
+        toast({ title: 'Viewing Book', description: book.title });
+        return `Showing details for "${book.title}"`;
+      }
+      return "Book not found";
+    },
+    
+    addToCart: (params: { bookId: string; quantity?: number }) => {
+      console.log('Adding to cart:', params.bookId);
+      const book = getBookById(params.bookId);
+      if (book) {
+        addItem(book, params.quantity || 1);
+        toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
+        return `Added "${book.title}" to cart`;
+      }
+      return "Book not found";
+    },
+    
+    removeFromCart: (params: { bookId: string }) => {
+      console.log('Removing from cart:', params.bookId);
+      removeItem(params.bookId);
+      toast({ title: 'Removed', description: 'Item removed from cart' });
+      return "Item removed from cart";
+    },
+    
+    clearCart: () => {
+      console.log('Clearing cart');
+      clearCart();
+      toast({ title: 'Cart Cleared', description: 'All items removed' });
+      return "Cart has been cleared";
+    },
+    
+    searchBooks: (params: { query: string }) => {
+      console.log('Searching for:', params.query);
+      navigate(`/browse?search=${encodeURIComponent(params.query)}`);
+      toast({ title: 'Searching', description: `Looking for "${params.query}"` });
+      return `Searching for "${params.query}"`;
+    },
+    
+    filterByGenre: (params: { genre: string }) => {
+      console.log('Filtering by genre:', params.genre);
+      navigate(`/browse?genre=${encodeURIComponent(params.genre)}`);
+      toast({ title: 'Filtering', description: `Showing ${params.genre} books` });
+      return `Filtering by ${params.genre}`;
+    },
+    
+    getCartInfo: () => {
+      const total = cartItems.reduce((sum, item) => sum + item.book.price * item.quantity, 0);
+      const info = {
+        itemCount: cartItems.length,
+        total: total.toFixed(2),
+        items: cartItems.map(item => ({
+          title: item.book.title,
+          quantity: item.quantity,
+          price: item.book.price
+        }))
+      };
+      console.log('Cart info:', info);
+      return JSON.stringify(info);
+    },
+    
+    getAvailableBooks: () => {
+      const bookList = books.map(b => ({
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        genre: b.genre,
+        price: b.price
+      }));
+      console.log('Available books:', bookList.length);
+      return JSON.stringify(bookList);
+    },
+    
+    goToCheckout: () => {
+      console.log('Going to checkout');
+      navigate('/checkout');
+      toast({ title: 'Checkout', description: 'Proceeding to checkout' });
+      return "Navigating to checkout";
+    },
+    
+    goToCart: () => {
+      console.log('Going to cart');
+      navigate('/cart');
+      toast({ title: 'Cart', description: 'Viewing your cart' });
+      return "Navigating to cart";
+    },
+    
+    browseCatalog: () => {
+      console.log('Browsing catalog');
+      navigate('/browse');
+      toast({ title: 'Browse', description: 'Viewing all books' });
+      return "Navigating to book catalog";
+    },
+    
+    goHome: () => {
+      console.log('Going home');
+      navigate('/');
+      return "Navigating to home page";
+    }
+  };
 
   const conversation = useConversation({
+    clientTools,
     onConnect: () => {
       console.log('Connected to ElevenLabs');
       setIsConnecting(false);
@@ -159,7 +280,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       {/* Instructions */}
       <p className="text-sm text-muted-foreground text-center max-w-xs">
         {isConnected
-          ? 'Speak naturally. You can interrupt at any time.'
+          ? 'Ask me to show books, add to cart, or navigate the store.'
           : 'Click the button below to start a voice conversation.'}
       </p>
 
