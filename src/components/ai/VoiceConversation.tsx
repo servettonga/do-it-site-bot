@@ -153,7 +153,17 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     getCartInfo: () => {
-      const cartItems = useCartStore.getState().items;
+      const cartState = useCartStore.getState();
+      // Wait for hydration if not ready
+      if (!cartState._hasHydrated) {
+        console.log('Cart not hydrated yet, returning message');
+        return JSON.stringify({ 
+          error: 'Cart is still loading, please try again in a moment',
+          itemCount: 0,
+          items: []
+        });
+      }
+      const cartItems = cartState.items;
       const total = cartItems.reduce((sum, item) => sum + item.book.price * item.quantity, 0);
       const info = {
         itemCount: cartItems.length,
