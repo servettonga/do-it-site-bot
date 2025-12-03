@@ -190,30 +190,29 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     getCartInfo: () => {
+      // Force fresh state read from Zustand store
       const cartState = useCartStore.getState();
-      // Wait for hydration if not ready
-      if (!cartState._hasHydrated) {
-        console.log('Cart not hydrated yet, returning message');
-        return JSON.stringify({ 
-          error: 'Cart is still loading, please try again in a moment',
-          itemCount: 0,
-          items: []
-        });
-      }
-      const cartItems = cartState.items;
+      const cartItems = cartState.items || [];
+      
+      // Log for debugging
+      console.log('getCartInfo called, hydrated:', cartState._hasHydrated, 'items:', cartItems.length);
+      
       const total = cartItems.reduce((sum, item) => sum + item.book.price * item.quantity, 0);
       const info = {
         itemCount: cartItems.length,
+        totalItems: cartItems.reduce((count, item) => count + item.quantity, 0),
         total: total.toFixed(2),
         items: cartItems.map(item => ({
           bookId: item.book.id,
           title: item.book.title,
           author: item.book.author,
           quantity: item.quantity,
-          price: item.book.price
-        }))
+          price: item.book.price,
+          subtotal: (item.book.price * item.quantity).toFixed(2)
+        })),
+        isEmpty: cartItems.length === 0
       };
-      console.log('Cart info:', info);
+      console.log('Cart info result:', JSON.stringify(info));
       return JSON.stringify(info);
     },
     
