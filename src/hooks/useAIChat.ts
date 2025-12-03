@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { useAIStore } from '@/stores/aiStore';
 import { getBookById } from '@/data/books';
 import { ChatMessage, AIActionType } from '@/types/ai';
@@ -20,6 +21,7 @@ export function useAIChat() {
   const navigate = useNavigate();
   
   const { items: cartItems, addItem, removeItem, clearCart, getTotal } = useCartStore();
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, clearWishlist, items: wishlistItems } = useWishlistStore();
   const { addMessage, addAction, updateAction, setProcessing } = useAIStore();
 
   const executeAction = useCallback(async (
@@ -111,6 +113,38 @@ export function useAIChat() {
           break;
         }
 
+        case 'add_to_wishlist': {
+          const bookId = action.data.bookId as string;
+          const book = getBookById(bookId);
+          if (book) {
+            addToWishlist(book);
+            toast({
+              title: 'Added to wishlist',
+              description: `${book.title} has been added to your wishlist.`,
+            });
+          }
+          break;
+        }
+
+        case 'remove_from_wishlist': {
+          const bookId = action.data.bookId as string;
+          removeFromWishlist(bookId);
+          toast({
+            title: 'Removed from wishlist',
+            description: `Item removed from your wishlist.`,
+          });
+          break;
+        }
+
+        case 'clear_wishlist': {
+          clearWishlist();
+          toast({
+            title: 'Wishlist cleared',
+            description: 'All items have been removed from your wishlist.',
+          });
+          break;
+        }
+
         default:
           break;
       }
@@ -126,7 +160,7 @@ export function useAIChat() {
         result: `Failed to execute ${action.type}`,
       });
     }
-  }, [addItem, removeItem, clearCart, navigate, addAction, updateAction]);
+  }, [addItem, removeItem, clearCart, addToWishlist, removeFromWishlist, clearWishlist, navigate, addAction, updateAction]);
 
   const sendMessage = useCallback(async (
     content: string,
@@ -224,6 +258,12 @@ function getActionDescription(action: { type: AIActionType; data: Record<string,
       return 'Proceeding to checkout';
     case 'thinking':
       return 'Processing your request...';
+    case 'add_to_wishlist':
+      return `Adding "${action.data.bookTitle}" to wishlist`;
+    case 'remove_from_wishlist':
+      return `Removing "${action.data.bookTitle}" from wishlist`;
+    case 'clear_wishlist':
+      return 'Clearing wishlist';
     default:
       return `Executing ${action.type}`;
   }

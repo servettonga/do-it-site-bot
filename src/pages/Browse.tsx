@@ -43,15 +43,38 @@ export default function Browse() {
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [showInStockOnly, setShowInStockOnly] = useState(false);
 
-  // Sync search query with URL params and clear genre filters for new searches
+  // Sync filters with URL params (for voice/AI-triggered filtering)
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
+    const urlGenre = searchParams.get('genre') as Genre | null;
+    const urlMinPrice = searchParams.get('minPrice');
+    const urlMaxPrice = searchParams.get('maxPrice');
+    const urlInStock = searchParams.get('inStock');
+    
+    // Update search query
     if (urlSearch !== searchQuery) {
       setSearchQuery(urlSearch);
-      // Clear genre filters when a new search comes in via URL (e.g., from AI)
-      if (urlSearch) {
+      // Clear genre filters when a new search comes in via URL
+      if (urlSearch && !urlGenre) {
         setSelectedGenres([]);
       }
+    }
+    
+    // Update genre filter from URL
+    if (urlGenre && !selectedGenres.includes(urlGenre)) {
+      setSelectedGenres([urlGenre]);
+    }
+    
+    // Update price range from URL
+    const minPrice = urlMinPrice ? parseFloat(urlMinPrice) : 0;
+    const maxPrice = urlMaxPrice ? parseFloat(urlMaxPrice) : 30;
+    if (urlMinPrice || urlMaxPrice) {
+      setPriceRange([minPrice, maxPrice]);
+    }
+    
+    // Update stock filter from URL
+    if (urlInStock === 'true') {
+      setShowInStockOnly(true);
     }
   }, [searchParams]);
 

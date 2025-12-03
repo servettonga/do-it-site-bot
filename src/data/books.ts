@@ -49,7 +49,7 @@ export const books: Book[] = [
     publishedYear: 2018,
     pages: 448,
     isbn: '978-0312577230',
-    inStock: true,
+    inStock: false,
   },
   // Mystery
   {
@@ -98,7 +98,7 @@ export const books: Book[] = [
     publishedYear: 2005,
     pages: 672,
     isbn: '978-0307454546',
-    inStock: true,
+    inStock: false,
   },
   // Sci-Fi
   {
@@ -147,7 +147,7 @@ export const books: Book[] = [
     publishedYear: 2011,
     pages: 384,
     isbn: '978-0553418026',
-    inStock: true,
+    inStock: false,
   },
   // Romance
   {
@@ -195,7 +195,7 @@ export const books: Book[] = [
     publishedYear: 2020,
     pages: 368,
     isbn: '978-1984806734',
-    inStock: true,
+    inStock: false,
   },
   // Fantasy
   {
@@ -243,7 +243,7 @@ export const books: Book[] = [
     publishedYear: 2010,
     pages: 1007,
     isbn: '978-0765326355',
-    inStock: true,
+    inStock: false,
   },
   // Non-Fiction
   {
@@ -340,7 +340,7 @@ export const books: Book[] = [
     publishedYear: 2011,
     pages: 368,
     isbn: '978-0062060563',
-    inStock: true,
+    inStock: false,
   },
   // Biography
   {
@@ -453,7 +453,7 @@ export const books: Book[] = [
     publishedYear: 1951,
     pages: 277,
     isbn: '978-0316769488',
-    inStock: true,
+    inStock: false,
   },
   {
     id: '29',
@@ -578,7 +578,7 @@ export const books: Book[] = [
     publishedYear: 2011,
     pages: 374,
     isbn: '978-0307887443',
-    inStock: true,
+    inStock: false,
   },
   {
     id: '37',
@@ -688,7 +688,7 @@ export const books: Book[] = [
     publishedYear: 1966,
     pages: 343,
     isbn: '978-0679745587',
-    inStock: true,
+    inStock: false,
   },
   {
     id: '44',
@@ -904,7 +904,7 @@ export const books: Book[] = [
     publishedYear: 2012,
     pages: 369,
     isbn: '978-0143124542',
-    inStock: true,
+    inStock: false,
   },
   {
     id: '58',
@@ -1103,7 +1103,7 @@ export const books: Book[] = [
     publishedYear: 2006,
     pages: 254,
     isbn: '978-0307341556',
-    inStock: true,
+    inStock: false,
   },
   {
     id: '71',

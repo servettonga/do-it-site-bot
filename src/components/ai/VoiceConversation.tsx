@@ -8,8 +8,10 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioWaveform } from './AudioWaveform';
 import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { getBookById, books } from '@/data/books';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { smoothScrollTo, smoothScrollBy, scrollThroughPage } from '@/utils/smoothScroll';
 
 interface VoiceConversationProps {
   agentId: string;
@@ -178,18 +180,70 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return `Could not find "${params.title}" in cart`;
     },
     
-    searchBooks: (params: { query: string }) => {
-      console.log('Searching for:', params.query);
+    // Search books by title or author - searches the FULL catalog
+    searchBooksByTitle: (params: { query: string }) => {
+      console.log('Searching books by title/author:', params.query);
+      const searchTerm = params.query.toLowerCase();
+      const matches = books.filter(b => 
+        b.title.toLowerCase().includes(searchTerm) || 
+        b.author.toLowerCase().includes(searchTerm)
+      );
+      
+      if (matches.length === 0) {
+        return `No books found matching "${params.query}". Total catalog has ${books.length} books.`;
+      }
+      
+      const results = matches.slice(0, 10).map(b => ({
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        price: b.price,
+        genre: b.genre,
+        inStock: b.inStock
+      }));
+      
+      // Navigate to browse with search
       navigateRef.current(`/browse?search=${encodeURIComponent(params.query)}`);
-      toast({ title: 'Searching', description: `Looking for "${params.query}"` });
-      return `Searching for "${params.query}"`;
+      toast({ title: 'Search Results', description: `Found ${matches.length} book(s) matching "${params.query}"` });
+      
+      return JSON.stringify({
+        totalMatches: matches.length,
+        showing: results.length,
+        totalCatalog: books.length,
+        results
+      });
     },
     
-    filterByGenre: (params: { genre: string }) => {
-      console.log('Filtering by genre:', params.genre);
-      navigateRef.current(`/browse?genre=${encodeURIComponent(params.genre)}`);
-      toast({ title: 'Filtering', description: `Showing ${params.genre} books` });
-      return `Filtering by ${params.genre}`;
+    filterBooks: (params: { genre?: string; maxPrice?: number; minPrice?: number; inStock?: boolean }) => {
+      console.log('Filtering books:', params);
+      const searchParams = new URLSearchParams();
+      
+      if (params.genre) {
+        searchParams.set('genre', params.genre);
+      }
+      if (params.maxPrice !== undefined) {
+        searchParams.set('maxPrice', params.maxPrice.toString());
+      }
+      if (params.minPrice !== undefined) {
+        searchParams.set('minPrice', params.minPrice.toString());
+      }
+      if (params.inStock !== undefined) {
+        searchParams.set('inStock', params.inStock.toString());
+      }
+      
+      const queryString = searchParams.toString();
+      navigateRef.current(`/browse${queryString ? `?${queryString}` : ''}`);
+      
+      // Build description
+      const filters: string[] = [];
+      if (params.genre) filters.push(`genre: ${params.genre}`);
+      if (params.minPrice !== undefined) filters.push(`min price: $${params.minPrice}`);
+      if (params.maxPrice !== undefined) filters.push(`max price: $${params.maxPrice}`);
+      if (params.inStock) filters.push('in stock only');
+      
+      const description = filters.length > 0 ? filters.join(', ') : 'all books';
+      toast({ title: 'Filtering', description: `Showing ${description}` });
+      return `Filtering books: ${description}`;
     },
     
     getCartInfo: () => {
@@ -225,10 +279,32 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         title: b.title,
         author: b.author,
         genre: b.genre,
-        price: b.price
+        price: b.price,
+        inStock: b.inStock
       }));
       console.log('Available books:', bookList.length);
-      return JSON.stringify(bookList);
+      return JSON.stringify({ totalBooks: bookList.length, books: bookList });
+    },
+    
+    getBookDetails: (params: { bookId: string }) => {
+      console.log('Getting book details:', params.bookId);
+      const book = getBookById(params.bookId);
+      if (book) {
+        return JSON.stringify({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          genre: book.genre,
+          rating: book.rating,
+          reviewCount: book.reviewCount,
+          description: book.description,
+          inStock: book.inStock,
+          pages: book.pages,
+          publishedYear: book.publishedYear
+        });
+      }
+      return `Book with ID "${params.bookId}" not found`;
     },
     
     goToCheckout: () => {
@@ -313,24 +389,149 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return "No book currently being viewed. Please navigate to a book detail page first.";
     },
     
-    scrollPage: (params: { direction: 'up' | 'down'; amount?: 'small' | 'medium' | 'large' | 'top' | 'bottom' }) => {
+    // Wishlist tools
+    addToWishlist: (params: { bookId: string }) => {
+      console.log('Adding to wishlist:', params.bookId);
+      const book = getBookById(params.bookId);
+      if (book) {
+        const wishlistState = useWishlistStore.getState();
+        if (wishlistState.isInWishlist(book.id)) {
+          return `"${book.title}" is already in your wishlist`;
+        }
+        wishlistState.addItem(book);
+        toast({ title: 'Added to Wishlist', description: `${book.title} saved to wishlist` });
+        return `Added "${book.title}" to wishlist`;
+      }
+      return "Book not found";
+    },
+    
+    addToWishlistByTitle: (params: { title: string }) => {
+      console.log('Adding to wishlist by title:', params.title);
+      const searchTitle = params.title.toLowerCase();
+      const book = books.find(b => 
+        b.title.toLowerCase().includes(searchTitle) ||
+        searchTitle.includes(b.title.toLowerCase())
+      );
+      if (book) {
+        const wishlistState = useWishlistStore.getState();
+        if (wishlistState.isInWishlist(book.id)) {
+          return `"${book.title}" is already in your wishlist`;
+        }
+        wishlistState.addItem(book);
+        toast({ title: 'Added to Wishlist', description: `${book.title} saved to wishlist` });
+        return `Added "${book.title}" to wishlist`;
+      }
+      return `Could not find a book matching "${params.title}"`;
+    },
+    
+    removeFromWishlist: (params: { bookId: string }) => {
+      console.log('Removing from wishlist:', params.bookId);
+      const book = getBookById(params.bookId);
+      if (book) {
+        useWishlistStore.getState().removeItem(params.bookId);
+        toast({ title: 'Removed from Wishlist', description: `${book.title} removed` });
+        return `Removed "${book.title}" from wishlist`;
+      }
+      return "Book not found";
+    },
+    
+    removeFromWishlistByTitle: (params: { title: string }) => {
+      console.log('Removing from wishlist by title:', params.title);
+      const wishlistState = useWishlistStore.getState();
+      const searchTitle = params.title.toLowerCase();
+      const item = wishlistState.items.find(b => 
+        b.title.toLowerCase().includes(searchTitle) ||
+        searchTitle.includes(b.title.toLowerCase())
+      );
+      if (item) {
+        wishlistState.removeItem(item.id);
+        toast({ title: 'Removed from Wishlist', description: `${item.title} removed` });
+        return `Removed "${item.title}" from wishlist`;
+      }
+      return `Could not find "${params.title}" in wishlist`;
+    },
+    
+    getWishlistInfo: () => {
+      const wishlistState = useWishlistStore.getState();
+      const items = wishlistState.items;
+      
+      const info = {
+        itemCount: items.length,
+        items: items.map(book => ({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          inStock: book.inStock
+        })),
+        isEmpty: items.length === 0
+      };
+      console.log('Wishlist info:', JSON.stringify(info));
+      return JSON.stringify(info);
+    },
+    
+    addCurrentBookToWishlist: () => {
+      const context = getCurrentPageContext();
+      if (context.page === 'book-detail' && context.bookId) {
+        const book = getBookById(context.bookId);
+        if (book) {
+          const wishlistState = useWishlistStore.getState();
+          if (wishlistState.isInWishlist(book.id)) {
+            return `"${book.title}" is already in your wishlist`;
+          }
+          wishlistState.addItem(book);
+          toast({ title: 'Added to Wishlist', description: `${book.title} saved to wishlist` });
+          return `Added "${book.title}" to wishlist`;
+        }
+      }
+      return "No book currently being viewed. Please navigate to a book detail page first.";
+    },
+    
+    clearWishlist: () => {
+      console.log('Clearing wishlist');
+      useWishlistStore.getState().clearWishlist();
+      toast({ title: 'Wishlist Cleared', description: 'All items removed' });
+      return "Wishlist has been cleared";
+    },
+    
+    goToWishlist: () => {
+      console.log('Going to wishlist');
+      navigateRef.current('/wishlist');
+      toast({ title: 'Wishlist', description: 'Viewing your wishlist' });
+      return "Navigating to wishlist";
+    },
+    
+    scrollPage: (params: { direction: 'up' | 'down'; amount?: 'small' | 'medium' | 'large' | 'top' | 'bottom' | 'browse' }) => {
       const amount = params.amount || 'medium';
       console.log('Scrolling:', params.direction, amount);
       
+      // Special "browse" mode - slowly scroll through the entire page like a human reading
+      if (amount === 'browse') {
+        const duration = 5000; // 5 seconds to scroll through page
+        scrollThroughPage(duration);
+        return "Slowly browsing through the page content";
+      }
+      
       if (amount === 'top') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        smoothScrollTo(0, 1500); // 1.5 seconds
         return "Scrolled to top of page";
       }
       if (amount === 'bottom') {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        smoothScrollTo(maxScroll, 2000); // 2 seconds
         return "Scrolled to bottom of page";
       }
       
-      const scrollAmounts = { small: 200, medium: 400, large: 800 };
-      const pixels = scrollAmounts[amount] || 400;
+      // Duration varies by scroll amount for natural feel
+      const scrollConfig = { 
+        small: { pixels: 200, duration: 600 }, 
+        medium: { pixels: 400, duration: 1000 }, 
+        large: { pixels: 800, duration: 1500 } 
+      };
+      const config = scrollConfig[amount as keyof typeof scrollConfig] || scrollConfig.medium;
       const direction = params.direction === 'up' ? -1 : 1;
       
-      window.scrollBy({ top: pixels * direction, behavior: 'smooth' });
+      smoothScrollBy(config.pixels * direction, config.duration);
       return `Scrolled ${params.direction} by ${amount} amount`;
     }
   }), [getCurrentPageContext]);
@@ -375,12 +576,15 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
   });
 
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
   const startConversation = useCallback(async () => {
     try {
       setIsConnecting(true);
       
-      // Request microphone permission first
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Request microphone permission first and store the stream
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
       
       // Get signed URL from edge function
       const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
@@ -388,6 +592,9 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       });
       
       if (error || !data?.signedUrl) {
+        // Clean up stream on error
+        stream.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
         throw new Error(error?.message || 'Failed to get signed URL');
       }
       
@@ -407,6 +614,14 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   }, [agentId, conversation]);
 
   const endConversation = useCallback(async () => {
+    // Stop all microphone tracks
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('Stopped track:', track.kind);
+      });
+      mediaStreamRef.current = null;
+    }
     await conversation.endSession();
   }, [conversation]);
 

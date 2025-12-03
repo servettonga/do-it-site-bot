@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Mic, MicOff, Volume2, VolumeX, Loader2, Keyboard } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -170,26 +171,29 @@ export function ChatWidget() {
       )}
 
       {/* Voice Assistant Toggle Button - Siri-like */}
-      <button
-        onClick={handleToggleChat}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full",
-          "bg-gradient-to-br from-primary via-primary to-accent",
-          "shadow-[0_0_30px_rgba(var(--primary),0.4)]",
-          "transition-all duration-500 hover:scale-110",
-          "flex items-center justify-center",
-          "before:absolute before:inset-0 before:rounded-full",
-          "before:bg-gradient-to-br before:from-primary/80 before:to-accent/80",
-          "before:animate-pulse before:opacity-60",
-          "overflow-hidden",
-          isChatOpen && "scale-0 opacity-0 pointer-events-none",
-        )}
-        aria-label="Talk to your assistant"
-      >
-        <div className="relative z-10">
-          <AudioWaveform isActive={true} isSpeaking={false} barCount={5} className="h-6" />
-        </div>
-      </button>
+      <div className={cn(
+        "fixed bottom-6 right-6 z-50",
+        isChatOpen && "scale-0 opacity-0 pointer-events-none",
+      )}>
+        {/* Ping effect around entire button */}
+        <span className="absolute inset-0 rounded-full bg-primary/50 animate-ping-slow"></span>
+        <button
+          onClick={handleToggleChat}
+          className={cn(
+            "relative h-16 w-16 rounded-full",
+            "bg-gradient-to-br from-primary/80 via-primary/70 to-accent/80",
+            "shadow-[0_0_30px_rgba(var(--primary),0.4)]",
+            "transition-all duration-500 hover:scale-110",
+            "flex items-center justify-center",
+            "overflow-hidden",
+          )}
+          aria-label="Talk to your assistant"
+        >
+          <div className="relative z-10">
+            <AudioWaveform isActive={true} isSpeaking={false} barCount={5} className="h-6" />
+          </div>
+        </button>
+      </div>
 
       {/* Assistant Panel */}
       <div
@@ -220,7 +224,7 @@ export function ChatWidget() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {mode === "voice" ? (
             /* Voice Mode - Primary */
             <div className="flex-1 flex flex-col">
@@ -243,8 +247,9 @@ export function ChatWidget() {
             </div>
           ) : (
             /* Text Mode - Secondary */
-            <>
-              <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <ScrollArea className="flex-1 min-h-0 h-full" ref={scrollAreaRef}>
+                <div className="p-4">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -284,7 +289,22 @@ export function ChatWidget() {
                               : "bg-muted text-foreground rounded-bl-md",
                           )}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          {message.role === "assistant" ? (
+                            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                              <ReactMarkdown
+                                components={{
+                                  p: ({ children }) => <p className="my-1">{children}</p>,
+                                  ul: ({ children }) => <ul className="my-1 ml-4 list-disc">{children}</ul>,
+                                  li: ({ children }) => <li className="my-0.5">{children}</li>,
+                                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                }}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          )}
                           {message.isVoice && (
                             <div className="flex items-center gap-1 mt-1 opacity-60">
                               <Mic className="h-3 w-3" />
@@ -306,10 +326,11 @@ export function ChatWidget() {
                     )}
                   </div>
                 )}
+                </div>
               </ScrollArea>
 
               {/* Text Input Area */}
-              <div className="p-4 border-t border-border/50 bg-muted/20">
+              <div className="shrink-0 p-4 border-t border-border/50 bg-muted/20">
                 <div className="flex items-center gap-2">
                   {isVoiceSupported && (
                     <Button
@@ -362,7 +383,7 @@ export function ChatWidget() {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

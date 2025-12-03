@@ -28,7 +28,10 @@ export type AIActionType =
   | 'checkout'
   | 'voice_input'
   | 'voice_output'
-  | 'thinking';
+  | 'thinking'
+  | 'add_to_wishlist'
+  | 'remove_from_wishlist'
+  | 'clear_wishlist';
 
 export const actionTypeLabels: Record<AIActionType, string> = {
   search: 'Search',
@@ -43,4 +46,7 @@ export const actionTypeLabels: Record<AIActionType, string> = {
   voice_input: 'Voice Input',
   voice_output: 'Voice Output',
   thinking: 'Thinking',
+  add_to_wishlist: 'Add to Wishlist',
+  remove_from_wishlist: 'Remove from Wishlist',
+  clear_wishlist: 'Clear Wishlist',
 };

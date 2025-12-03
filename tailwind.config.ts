@@ -92,6 +92,17 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "bounce-subtle": {
+          "0%": { transform: "translateY(0)" },
+          "3%": { transform: "translateY(-8px)" },
+          "6%": { transform: "translateY(0)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        "ping-slow": {
+          "0%": { transform: "scale(1)", opacity: "0.6" },
+          "5%": { transform: "scale(1.5)", opacity: "0" },
+          "6%, 100%": { transform: "scale(1)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -99,8 +110,10 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
+        "bounce-subtle": "bounce-subtle 10s ease-in-out infinite",
+        "ping-slow": "ping-slow 10s ease-out infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

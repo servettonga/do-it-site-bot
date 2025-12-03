@@ -4,18 +4,27 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { BookGrid } from '@/components/books/BookGrid';
 import { getBookById, getBooksByGenre } from '@/data/books';
 import { genreLabels } from '@/types/book';
 import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
+import { useBookEnrichment } from '@/hooks/useBookEnrichment';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
   const book = getBookById(id || '');
   const addItem = useCartStore((state) => state.addItem);
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const [quantity, setQuantity] = useState(1);
+  
+  // Fetch real book data from Google Books API
+  const { enrichedData, isLoading: isLoadingEnriched } = useBookEnrichment(book?.isbn || '');
+  const isWishlisted = book ? isInWishlist(book.id) : false;
 
   if (!book) {
     return (
@@ -47,6 +56,23 @@ export default function BookDetail() {
     toast.success(`Added ${quantity} × "${book.title}" to cart`);
   };
 
+  const handleToggleWishlist = () => {
+    if (isWishlisted) {
+      removeFromWishlist(book.id);
+      toast.success('Removed from wishlist');
+    } else {
+      addToWishlist(book);
+      toast.success('Added to wishlist');
+    }
+  };
+
+  // Use Google Books cover if available, otherwise fallback
+  const coverImage = enrichedData?.coverImage || book.coverImage;
+  // Use Google Books description if available and longer
+  const description = (enrichedData?.description && enrichedData.description.length > book.description.length) 
+    ? enrichedData.description 
+    : book.description;
+
   const discount = book.originalPrice
     ? Math.round((1 - book.price / book.originalPrice) * 100)
     : 0;
@@ -71,10 +97,16 @@ export default function BookDetail() {
           {/* Book Cover */}
           <div className="relative max-w-[320px] mx-auto md:mx-0">
             <div className="aspect-[2/3] overflow-hidden rounded-lg bg-muted shadow-xl">
+              {isLoadingEnriched && (
+                <Skeleton className="absolute inset-0" />
+              )}
               <img
-                src={book.coverImage}
+                src={coverImage}
                 alt={book.title}
-                className="h-full w-full object-cover"
+                className={cn(
+                  "h-full w-full object-cover transition-opacity duration-300",
+                  isLoadingEnriched && "opacity-50"
+                )}
               />
             </div>
             {book.bestseller && (
@@ -169,21 +201,26 @@ export default function BookDetail() {
               </div>
               
               <Button
-                size="lg"
+                size="sm"
                 onClick={handleAddToCart}
                 disabled={!book.inStock}
-                className="flex-1 gap-2"
+                className="gap-1.5"
               >
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-4 w-4" />
                 Add to Cart
               </Button>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-2 mb-8">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Heart className="h-4 w-4" />
-                Save for Later
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={cn("gap-2", isWishlisted && "text-red-500")}
+                onClick={handleToggleWishlist}
+              >
+                <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+                {isWishlisted ? 'Saved' : 'Save for Later'}
               </Button>
               <Button variant="outline" size="sm" className="gap-2">
                 <Share2 className="h-4 w-4" />
@@ -197,7 +234,7 @@ export default function BookDetail() {
             <div className="mb-6">
               <h3 className="font-display font-semibold text-lg mb-2">Description</h3>
               <p className="text-muted-foreground leading-relaxed">
-                {book.description}
+                {description}
               </p>
             </div>
 
