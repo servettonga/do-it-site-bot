@@ -43,11 +43,15 @@ export default function Browse() {
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [showInStockOnly, setShowInStockOnly] = useState(false);
 
-  // Sync search query with URL params
+  // Sync search query with URL params and clear genre filters for new searches
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
     if (urlSearch !== searchQuery) {
       setSearchQuery(urlSearch);
+      // Clear genre filters when a new search comes in via URL (e.g., from AI)
+      if (urlSearch) {
+        setSelectedGenres([]);
+      }
     }
   }, [searchParams]);
 
