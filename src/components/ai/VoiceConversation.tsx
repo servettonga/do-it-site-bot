@@ -356,33 +356,39 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   const isSpeaking = conversation.isSpeaking;
 
   // Show conversation history after ended
-  if (hasEnded && conversationHistory.length > 0) {
+  if (hasEnded) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-[400px]">
         <div className="text-center py-2 border-b border-border/50">
           <span className="text-sm text-muted-foreground">Conversation ended</span>
         </div>
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-3">
-            {conversationHistory.map((msg, i) => (
-              <div
-                key={i}
-                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
-              >
+        {conversationHistory.length > 0 ? (
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-4 space-y-3">
+              {conversationHistory.map((msg, i) => (
                 <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md"
-                  )}
+                  key={i}
+                  className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-2xl px-4 py-2.5",
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted text-foreground rounded-bl-md"
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">No messages recorded</p>
           </div>
-        </ScrollArea>
+        )}
         <div className="p-4 border-t border-border/50">
           <Button onClick={restartConversation} className="w-full gap-2">
             <RotateCcw className="w-4 h-4" />
