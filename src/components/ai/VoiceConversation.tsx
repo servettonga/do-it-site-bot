@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useConversation } from '@11labs/react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceConversationProps {
   agentId: string;
@@ -14,10 +15,12 @@ interface VoiceConversationProps {
 export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversationProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   const conversation = useConversation({
     onConnect: () => {
       console.log('Connected to ElevenLabs');
+      setIsConnecting(false);
       toast({
         title: 'Connected',
         description: 'Voice conversation started. Speak naturally!',
@@ -41,6 +44,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     onError: (error) => {
       console.error('Conversation error:', error);
+      setIsConnecting(false);
       toast({
         title: 'Error',
         description: 'Voice conversation error. Please try again.',
@@ -51,15 +55,27 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
 
   const startConversation = useCallback(async () => {
     try {
+      setIsConnecting(true);
+      
       // Request microphone permission first
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Start the conversation with the agent
+      // Get signed URL from edge function
+      const { data, error } = await supabase.functions.invoke('elevenlabs-signed-url', {
+        body: { agentId },
+      });
+      
+      if (error || !data?.signedUrl) {
+        throw new Error(error?.message || 'Failed to get signed URL');
+      }
+      
+      // Start the conversation with signed URL
       await conversation.startSession({
-        agentId,
+        signedUrl: data.signedUrl,
       });
     } catch (error) {
       console.error('Failed to start conversation:', error);
+      setIsConnecting(false);
       toast({
         title: 'Failed to start',
         description: error instanceof Error ? error.message : 'Could not start voice conversation',
@@ -171,8 +187,14 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
           onClick={isConnected ? endConversation : startConversation}
           variant={isConnected ? 'destructive' : 'default'}
           className="gap-2"
+          disabled={isConnecting}
         >
-          {isConnected ? (
+          {isConnecting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Connecting...
+            </>
+          ) : isConnected ? (
             <>
               <PhoneOff className="w-4 h-4" />
               End Call
