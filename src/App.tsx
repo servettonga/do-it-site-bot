@@ -9,6 +9,8 @@ import BookDetail from "./pages/BookDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
+import { ChatWidget } from "./components/ai/ChatWidget";
+import { ActionLogPanel } from "./components/ai/ActionLogPanel";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/checkout" element={<Checkout />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ChatWidget />
+        <ActionLogPanel />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

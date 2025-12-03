@@ -9,7 +9,7 @@ interface AIStore {
   isActionLogOpen: boolean;
   
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
-  addAction: (action: Omit<AIAction, 'id' | 'timestamp'>) => void;
+  addAction: (action: Omit<AIAction, 'id' | 'timestamp'>) => string;
   updateAction: (id: string, updates: Partial<AIAction>) => void;
   setProcessing: (processing: boolean) => void;
   toggleChat: () => void;
@@ -38,7 +38,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     }));
   },
   
-  addAction: (action) => {
+  addAction: (action): string => {
     const newAction: AIAction = {
       ...action,
       id: crypto.randomUUID(),
