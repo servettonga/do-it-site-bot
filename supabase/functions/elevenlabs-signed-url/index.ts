@@ -44,7 +44,7 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Signed URL obtained successfully');
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ signedUrl: data.signed_url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
