@@ -1,51 +1,50 @@
-import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Mic, MicOff, Volume2, VolumeX, Loader2, Phone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
-import { useAIStore } from '@/stores/aiStore';
-import { useAIChat } from '@/hooks/useAIChat';
-import { useVoiceInput } from '@/hooks/useVoiceInput';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
-import { toast } from '@/hooks/use-toast';
-import { VoiceConversation } from './VoiceConversation';
+import { useState, useRef, useEffect } from "react";
+import { MessageCircle, X, Send, Mic, MicOff, Volume2, VolumeX, Loader2, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { useAIStore } from "@/stores/aiStore";
+import { useAIChat } from "@/hooks/useAIChat";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { toast } from "@/hooks/use-toast";
+import { VoiceConversation } from "./VoiceConversation";
 
 // You'll need to create an ElevenLabs agent and put its ID here
 // Create one at: https://elevenlabs.io/conversational-ai
-const ELEVENLABS_AGENT_ID = 'your-agent-id-here';
+const ELEVENLABS_AGENT_ID = "agent_5701kbggr4yyef0ttsf3pszm1hcr";
 
 export function ChatWidget() {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [mode, setMode] = useState<'chat' | 'voice'>('chat');
+  const [mode, setMode] = useState<"chat" | "voice">("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  const { 
-    messages, 
-    isChatOpen, 
-    isProcessing,
-    toggleChat, 
-    addMessage,
-  } = useAIStore();
-  
+
+  const { messages, isChatOpen, isProcessing, toggleChat, addMessage } = useAIStore();
+
   const { sendMessage, isLoading } = useAIChat();
-  
-  const { speak, stop: stopSpeaking, isSpeaking, isLoading: isTTSLoading } = useTextToSpeech({
+
+  const {
+    speak,
+    stop: stopSpeaking,
+    isSpeaking,
+    isLoading: isTTSLoading,
+  } = useTextToSpeech({
     onError: (error) => {
       toast({
-        title: 'Voice Error',
+        title: "Voice Error",
         description: error,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
 
-  const { 
-    isListening, 
+  const {
+    isListening,
     transcript,
-    startListening, 
+    startListening,
     stopListening,
     isSupported: isVoiceSupported,
   } = useVoiceInput({
@@ -55,9 +54,9 @@ export function ChatWidget() {
     },
     onError: (error) => {
       toast({
-        title: 'Voice Input Error',
+        title: "Voice Input Error",
         description: error,
-        variant: 'destructive',
+        variant: "destructive",
       });
     },
   });
@@ -78,19 +77,19 @@ export function ChatWidget() {
     const messageText = text.trim();
     if (!messageText || isLoading) return;
 
-    setInputValue('');
-    
+    setInputValue("");
+
     addMessage({
-      role: 'user',
+      role: "user",
       content: messageText,
       isVoice,
     });
 
     try {
       const response = await sendMessage(messageText, messages, isVoice);
-      
+
       addMessage({
-        role: 'assistant',
+        role: "assistant",
         content: response,
       });
 
@@ -99,15 +98,15 @@ export function ChatWidget() {
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to get a response. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to get a response. Please try again.",
+        variant: "destructive",
       });
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -130,7 +129,7 @@ export function ChatWidget() {
 
   const handleVoiceMessage = (message: { role: string; content: string }) => {
     addMessage({
-      role: message.role as 'user' | 'assistant',
+      role: message.role as "user" | "assistant",
       content: message.content,
       isVoice: true,
     });
@@ -145,7 +144,7 @@ export function ChatWidget() {
           "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
           "bg-primary hover:bg-primary/90 text-primary-foreground",
           "transition-all duration-300 hover:scale-105",
-          isChatOpen && "scale-0 opacity-0"
+          isChatOpen && "scale-0 opacity-0",
         )}
         size="icon"
       >
@@ -159,16 +158,14 @@ export function ChatWidget() {
           "bg-card border border-border rounded-2xl shadow-2xl",
           "flex flex-col overflow-hidden",
           "transition-all duration-300 ease-out",
-          isChatOpen 
-            ? "opacity-100 translate-y-0 h-[32rem]" 
-            : "opacity-0 translate-y-8 h-0 pointer-events-none"
+          isChatOpen ? "opacity-100 translate-y-0 h-[32rem]" : "opacity-0 translate-y-8 h-0 pointer-events-none",
         )}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/50">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              {mode === 'voice' ? (
+              {mode === "voice" ? (
                 <Phone className="h-5 w-5 text-primary" />
               ) : (
                 <MessageCircle className="h-5 w-5 text-primary" />
@@ -177,22 +174,22 @@ export function ChatWidget() {
             <div>
               <h3 className="font-semibold text-foreground">BookHaven Assistant</h3>
               <p className="text-xs text-muted-foreground">
-                {mode === 'voice' 
-                  ? 'Real-time voice conversation' 
-                  : isProcessing 
-                    ? 'Thinking...' 
-                    : 'Ask me anything about books'}
+                {mode === "voice"
+                  ? "Real-time voice conversation"
+                  : isProcessing
+                    ? "Thinking..."
+                    : "Ask me anything about books"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {mode === 'chat' && (
+            {mode === "chat" && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={toggleVoiceOutput}
                 className="h-8 w-8"
-                title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+                title={voiceEnabled ? "Disable voice responses" : "Enable voice responses"}
               >
                 {voiceEnabled ? (
                   <Volume2 className="h-4 w-4 text-primary" />
@@ -201,19 +198,14 @@ export function ChatWidget() {
                 )}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleChat}
-              className="h-8 w-8"
-            >
+            <Button variant="ghost" size="icon" onClick={toggleChat} className="h-8 w-8">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         {/* Mode Tabs */}
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'chat' | 'voice')} className="flex-1 flex flex-col">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "chat" | "voice")} className="flex-1 flex flex-col">
           <div className="px-4 pt-2">
             <TabsList className="w-full">
               <TabsTrigger value="chat" className="flex-1 gap-2">
@@ -260,17 +252,14 @@ export function ChatWidget() {
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={cn(
-                        "flex",
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
-                      )}
+                      className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}
                     >
                       <div
                         className={cn(
                           "max-w-[85%] rounded-2xl px-4 py-2.5",
-                          message.role === 'user'
-                            ? 'bg-primary text-primary-foreground rounded-br-md'
-                            : 'bg-muted text-foreground rounded-bl-md'
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted text-foreground rounded-bl-md",
                         )}
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -308,14 +297,10 @@ export function ChatWidget() {
                     disabled={isLoading || isTTSLoading}
                     className={cn(
                       "h-10 w-10 shrink-0 transition-all",
-                      isListening && "bg-red-500 hover:bg-red-600 animate-pulse"
+                      isListening && "bg-red-500 hover:bg-red-600 animate-pulse",
                     )}
                   >
-                    {isListening ? (
-                      <MicOff className="h-4 w-4" />
-                    ) : (
-                      <Mic className="h-4 w-4" />
-                    )}
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </Button>
                 )}
                 <Input
@@ -332,21 +317,14 @@ export function ChatWidget() {
                   size="icon"
                   className="h-10 w-10 shrink-0"
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
               {isSpeaking && (
                 <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                   <Volume2 className="h-3 w-3 animate-pulse text-primary" />
                   <span>Speaking...</span>
-                  <button 
-                    onClick={stopSpeaking}
-                    className="text-primary hover:underline"
-                  >
+                  <button onClick={stopSpeaking} className="text-primary hover:underline">
                     Stop
                   </button>
                 </div>
@@ -360,7 +338,7 @@ export function ChatWidget() {
               <VoiceConversation
                 agentId={ELEVENLABS_AGENT_ID}
                 onMessage={handleVoiceMessage}
-                onClose={() => setMode('chat')}
+                onClose={() => setMode("chat")}
               />
             </div>
           </TabsContent>
