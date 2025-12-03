@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useConversation } from '@11labs/react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, VolumeX, PhoneOff, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -24,14 +24,20 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
   const [hasEnded, setHasEnded] = useState(false);
   
+  const navigateRef = useRef<ReturnType<typeof useNavigate>>(null!);
+  const locationRef = useRef<ReturnType<typeof useLocation>>(null!);
+  
   const navigate = useNavigate();
   const location = useLocation();
-  const { addItem, removeItem, updateQuantity, clearCart, items: cartItems } = useCartStore();
+  
+  // Keep refs updated
+  navigateRef.current = navigate;
+  locationRef.current = location;
 
-  // Get current page context
+  // Get current page context - using ref for fresh location
   const getCurrentPageContext = useCallback(() => {
-    const path = location.pathname;
-    const searchParams = new URLSearchParams(location.search);
+    const path = locationRef.current.pathname;
+    const searchParams = new URLSearchParams(locationRef.current.search);
     
     if (path === '/') {
       return { page: 'home', description: 'User is on the home page viewing featured books and bestsellers' };
@@ -68,13 +74,13 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return { page: 'checkout', description: 'User is at checkout' };
     }
     return { page: 'unknown', path, description: `User is on ${path}` };
-  }, [location]);
+  }, []);
 
-  // Client tools that the ElevenLabs agent can call
-  const clientTools = {
+  // Client tools that the ElevenLabs agent can call - memoized to prevent recreation
+  const clientTools = useMemo(() => ({
     navigate: (params: { path: string }) => {
       console.log('Navigating to:', params.path);
-      navigate(params.path);
+      navigateRef.current(params.path);
       toast({ title: 'Navigating', description: `Going to ${params.path}` });
       return `Navigated to ${params.path}`;
     },
@@ -83,7 +89,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       console.log('Viewing book:', params.bookId);
       const book = getBookById(params.bookId);
       if (book) {
-        navigate(`/book/${params.bookId}`);
+        navigateRef.current(`/book/${params.bookId}`);
         toast({ title: 'Viewing Book', description: book.title });
         return `Showing details for "${book.title}"`;
       }
@@ -94,7 +100,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       console.log('Adding to cart:', params.bookId);
       const book = getBookById(params.bookId);
       if (book) {
-        addItem(book, params.quantity || 1);
+        useCartStore.getState().addItem(book, params.quantity || 1);
         toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
         return `Added "${book.title}" to cart`;
       }
@@ -103,28 +109,29 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     
     removeFromCart: (params: { bookId: string }) => {
       console.log('Removing from cart:', params.bookId);
-      removeItem(params.bookId);
+      useCartStore.getState().removeItem(params.bookId);
       toast({ title: 'Removed', description: 'Item removed from cart' });
       return "Item removed from cart";
     },
     
     clearCart: () => {
       console.log('Clearing cart');
-      clearCart();
+      useCartStore.getState().clearCart();
       toast({ title: 'Cart Cleared', description: 'All items removed' });
       return "Cart has been cleared";
     },
     
     updateCartQuantity: (params: { bookId: string; quantity: number }) => {
       console.log('Updating quantity:', params.bookId, params.quantity);
-      const item = cartItems.find(i => i.book.id === params.bookId);
+      const cartState = useCartStore.getState();
+      const item = cartState.items.find(i => i.book.id === params.bookId);
       if (item) {
         if (params.quantity <= 0) {
-          removeItem(params.bookId);
+          cartState.removeItem(params.bookId);
           toast({ title: 'Removed', description: `"${item.book.title}" removed from cart` });
           return `Removed "${item.book.title}" from cart`;
         }
-        updateQuantity(params.bookId, params.quantity);
+        cartState.updateQuantity(params.bookId, params.quantity);
         toast({ title: 'Updated', description: `"${item.book.title}" quantity set to ${params.quantity}` });
         return `Updated "${item.book.title}" quantity to ${params.quantity}`;
       }
@@ -133,19 +140,20 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     
     searchBooks: (params: { query: string }) => {
       console.log('Searching for:', params.query);
-      navigate(`/browse?search=${encodeURIComponent(params.query)}`);
+      navigateRef.current(`/browse?search=${encodeURIComponent(params.query)}`);
       toast({ title: 'Searching', description: `Looking for "${params.query}"` });
       return `Searching for "${params.query}"`;
     },
     
     filterByGenre: (params: { genre: string }) => {
       console.log('Filtering by genre:', params.genre);
-      navigate(`/browse?genre=${encodeURIComponent(params.genre)}`);
+      navigateRef.current(`/browse?genre=${encodeURIComponent(params.genre)}`);
       toast({ title: 'Filtering', description: `Showing ${params.genre} books` });
       return `Filtering by ${params.genre}`;
     },
     
     getCartInfo: () => {
+      const cartItems = useCartStore.getState().items;
       const total = cartItems.reduce((sum, item) => sum + item.book.price * item.quantity, 0);
       const info = {
         itemCount: cartItems.length,
@@ -174,28 +182,28 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     
     goToCheckout: () => {
       console.log('Going to checkout');
-      navigate('/checkout');
+      navigateRef.current('/checkout');
       toast({ title: 'Checkout', description: 'Proceeding to checkout' });
       return "Navigating to checkout";
     },
     
     goToCart: () => {
       console.log('Going to cart');
-      navigate('/cart');
+      navigateRef.current('/cart');
       toast({ title: 'Cart', description: 'Viewing your cart' });
       return "Navigating to cart";
     },
     
     browseCatalog: () => {
       console.log('Browsing catalog');
-      navigate('/browse');
+      navigateRef.current('/browse');
       toast({ title: 'Browse', description: 'Viewing all books' });
       return "Navigating to book catalog";
     },
     
     goHome: () => {
       console.log('Going home');
-      navigate('/');
+      navigateRef.current('/');
       return "Navigating to home page";
     },
     
@@ -210,14 +218,14 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       if (context.page === 'book-detail' && context.bookId) {
         const book = getBookById(context.bookId);
         if (book) {
-          addItem(book, 1);
+          useCartStore.getState().addItem(book, 1);
           toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
           return `Added "${book.title}" to cart`;
         }
       }
       return "No book currently being viewed. Please navigate to a book detail page first.";
     }
-  };
+  }), [getCurrentPageContext]);
 
   const conversation = useConversation({
     clientTools,
