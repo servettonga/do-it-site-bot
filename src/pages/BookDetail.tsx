@@ -67,9 +67,9 @@ export default function BookDetail() {
           <span className="text-foreground">{book.title}</span>
         </nav>
 
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
+        <div className="grid md:grid-cols-[320px_1fr] gap-8 lg:gap-12 mb-16">
           {/* Book Cover */}
-          <div className="relative">
+          <div className="relative max-w-[320px] mx-auto md:mx-0">
             <div className="aspect-[2/3] overflow-hidden rounded-lg bg-muted shadow-xl">
               <img
                 src={book.coverImage}

@@ -236,6 +236,27 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         }
       }
       return "No book currently being viewed. Please navigate to a book detail page first.";
+    },
+    
+    scrollPage: (params: { direction: 'up' | 'down'; amount?: 'small' | 'medium' | 'large' | 'top' | 'bottom' }) => {
+      const amount = params.amount || 'medium';
+      console.log('Scrolling:', params.direction, amount);
+      
+      if (amount === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return "Scrolled to top of page";
+      }
+      if (amount === 'bottom') {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        return "Scrolled to bottom of page";
+      }
+      
+      const scrollAmounts = { small: 200, medium: 400, large: 800 };
+      const pixels = scrollAmounts[amount] || 400;
+      const direction = params.direction === 'up' ? -1 : 1;
+      
+      window.scrollBy({ top: pixels * direction, behavior: 'smooth' });
+      return `Scrolled ${params.direction} by ${amount} amount`;
     }
   }), [getCurrentPageContext]);
 
