@@ -19,7 +19,7 @@ const ELEVENLABS_AGENT_ID = "agent_5701kbggr4yyef0ttsf3pszm1hcr";
 export function ChatWidget() {
   const [inputValue, setInputValue] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [mode, setMode] = useState<"chat" | "voice">("chat");
+  const [mode, setMode] = useState<"chat" | "voice">("voice");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { messages, isChatOpen, isProcessing, toggleChat, addMessage } = useAIStore();
@@ -165,20 +165,16 @@ export function ChatWidget() {
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/50">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              {mode === "voice" ? (
-                <Phone className="h-5 w-5 text-primary" />
-              ) : (
-                <MessageCircle className="h-5 w-5 text-primary" />
-              )}
+              <Phone className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-foreground">BookHaven Assistant</h3>
               <p className="text-xs text-muted-foreground">
                 {mode === "voice"
-                  ? "Real-time voice conversation"
+                  ? "Tap to start a voice call"
                   : isProcessing
                     ? "Thinking..."
-                    : "Ask me anything about books"}
+                    : "Type your message"}
               </p>
             </div>
           </div>
@@ -205,16 +201,16 @@ export function ChatWidget() {
         </div>
 
         {/* Mode Tabs */}
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "chat" | "voice")} className="flex-1 flex flex-col">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "voice" | "chat")} className="flex-1 flex flex-col">
           <div className="px-4 pt-2">
             <TabsList className="w-full">
-              <TabsTrigger value="chat" className="flex-1 gap-2">
-                <MessageCircle className="h-4 w-4" />
-                Chat
-              </TabsTrigger>
               <TabsTrigger value="voice" className="flex-1 gap-2">
                 <Phone className="h-4 w-4" />
-                Voice Call
+                Voice
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="flex-1 gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Text
               </TabsTrigger>
             </TabsList>
           </div>
