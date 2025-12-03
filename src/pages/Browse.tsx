@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -33,14 +33,23 @@ type SortOption = 'relevance' | 'price-low' | 'price-high' | 'rating' | 'newest'
 export default function Browse() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialGenre = searchParams.get('genre') as Genre | null;
+  const initialSearch = searchParams.get('search') || '';
   
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedGenres, setSelectedGenres] = useState<Genre[]>(
     initialGenre ? [initialGenre] : []
   );
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 30]);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [showInStockOnly, setShowInStockOnly] = useState(false);
+
+  // Sync search query with URL params
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+  }, [searchParams]);
 
   const filteredBooks = useMemo(() => {
     let result = searchQuery ? searchBooks(searchQuery) : [...books];
