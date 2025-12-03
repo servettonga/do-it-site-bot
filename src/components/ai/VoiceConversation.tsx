@@ -34,10 +34,10 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   navigateRef.current = navigate;
   locationRef.current = location;
 
-  // Get current page context - using ref for fresh location
+  // Get current page context - always read fresh from window.location
   const getCurrentPageContext = useCallback(() => {
-    const path = locationRef.current.pathname;
-    const searchParams = new URLSearchParams(locationRef.current.search);
+    const path = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
     
     if (path === '/') {
       return { page: 'home', description: 'User is on the home page viewing featured books and bestsellers' };
@@ -101,10 +101,13 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       const book = getBookById(params.bookId);
       if (book) {
         useCartStore.getState().addItem(book, params.quantity || 1);
+        // Verify it was added
+        const cartAfter = useCartStore.getState();
+        console.log('Cart after add:', cartAfter.items.length, 'items');
         toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
-        return `Added "${book.title}" to cart`;
+        return `Successfully added "${book.title}" to cart. Cart now has ${cartAfter.items.length} item(s).`;
       }
-      return "Book not found";
+      return "Book not found - please provide a valid book ID";
     },
     
     removeFromCart: (params: { bookId: string }) => {
@@ -256,8 +259,44 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     getCurrentContext: () => {
-      const context = getCurrentPageContext();
-      console.log('Current context:', context);
+      // Always get fresh context from window.location
+      const path = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      let context: Record<string, unknown> = { page: 'unknown', path };
+      
+      if (path === '/') {
+        context = { page: 'home', description: 'User is on the home page viewing featured books and bestsellers' };
+      } else if (path === '/browse') {
+        const genre = searchParams.get('genre');
+        const search = searchParams.get('search');
+        context = { 
+          page: 'browse', 
+          genre: genre || undefined,
+          search: search || undefined,
+          description: `User is browsing books${genre ? ` filtered by ${genre}` : ''}${search ? ` searching for "${search}"` : ''}`
+        };
+      } else if (path.startsWith('/book/')) {
+        const bookId = path.split('/book/')[1];
+        const book = getBookById(bookId);
+        if (book) {
+          context = { 
+            page: 'book-detail', 
+            bookId,
+            bookTitle: book.title,
+            bookAuthor: book.author,
+            bookPrice: book.price,
+            bookGenre: book.genre,
+            description: `User is viewing "${book.title}" by ${book.author} ($${book.price})`
+          };
+        }
+      } else if (path === '/cart') {
+        context = { page: 'cart', description: 'User is viewing their shopping cart' };
+      } else if (path === '/checkout') {
+        context = { page: 'checkout', description: 'User is at checkout' };
+      }
+      
+      console.log('getCurrentContext called, path:', path, 'context:', context);
       return JSON.stringify(context);
     },
     
