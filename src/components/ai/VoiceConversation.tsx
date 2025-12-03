@@ -112,6 +112,23 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       return "Book not found - please provide a valid book ID";
     },
     
+    addToCartByTitle: (params: { title: string; quantity?: number }) => {
+      console.log('Adding to cart by title:', params.title);
+      const searchTitle = params.title.toLowerCase();
+      const book = books.find(b => 
+        b.title.toLowerCase().includes(searchTitle) ||
+        searchTitle.includes(b.title.toLowerCase())
+      );
+      if (book) {
+        useCartStore.getState().addItem(book, params.quantity || 1);
+        const cartAfter = useCartStore.getState();
+        console.log('Cart after add:', cartAfter.items.length, 'items');
+        toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
+        return `Added "${book.title}" to cart. Cart now has ${cartAfter.items.length} item(s).`;
+      }
+      return `Could not find book "${params.title}" in catalog`;
+    },
+    
     removeFromCart: (params: { bookId: string }) => {
       console.log('Removing from cart:', params.bookId);
       useCartStore.getState().removeItem(params.bookId);
@@ -160,7 +177,15 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     updateCartQuantityByTitle: (params: { title: string; quantity: number }) => {
-      console.log('Updating quantity by title:', params.title, params.quantity);
+      console.log('Updating quantity by title:', params.title, 'to quantity:', params.quantity, 'type:', typeof params.quantity);
+      
+      // Ensure quantity is a valid number
+      const newQuantity = Number(params.quantity);
+      if (isNaN(newQuantity)) {
+        console.error('Invalid quantity received:', params.quantity);
+        return "Invalid quantity. Please specify a number.";
+      }
+      
       const cartState = useCartStore.getState();
       const searchTitle = params.title.toLowerCase();
       const item = cartState.items.find(i => 
@@ -168,14 +193,15 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         searchTitle.includes(i.book.title.toLowerCase())
       );
       if (item) {
-        if (params.quantity <= 0) {
+        console.log('Found item:', item.book.title, 'current qty:', item.quantity, 'new qty:', newQuantity);
+        if (newQuantity <= 0) {
           cartState.removeItem(item.book.id);
           toast({ title: 'Removed', description: `"${item.book.title}" removed from cart` });
           return `Removed "${item.book.title}" from cart`;
         }
-        cartState.updateQuantity(item.book.id, params.quantity);
-        toast({ title: 'Updated', description: `"${item.book.title}" quantity set to ${params.quantity}` });
-        return `Updated "${item.book.title}" quantity to ${params.quantity}`;
+        cartState.updateQuantity(item.book.id, newQuantity);
+        toast({ title: 'Updated', description: `"${item.book.title}" quantity set to ${newQuantity}` });
+        return `Updated "${item.book.title}" quantity to ${newQuantity}`;
       }
       return `Could not find "${params.title}" in cart`;
     },
@@ -254,23 +280,25 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       // Log for debugging
       console.log('getCartInfo called, hydrated:', cartState._hasHydrated, 'items:', cartItems.length);
       
+      if (cartItems.length === 0) {
+        return "Cart is empty. No items.";
+      }
+      
       const total = cartItems.reduce((sum, item) => sum + item.book.price * item.quantity, 0);
-      const info = {
-        itemCount: cartItems.length,
-        totalItems: cartItems.reduce((count, item) => count + item.quantity, 0),
-        total: total.toFixed(2),
-        items: cartItems.map(item => ({
-          bookId: item.book.id,
-          title: item.book.title,
-          author: item.book.author,
-          quantity: item.quantity,
-          price: item.book.price,
-          subtotal: (item.book.price * item.quantity).toFixed(2)
-        })),
-        isEmpty: cartItems.length === 0
-      };
-      console.log('Cart info result:', JSON.stringify(info));
-      return JSON.stringify(info);
+      const totalQuantity = cartItems.reduce((count, item) => count + item.quantity, 0);
+      
+      // Format as clear text to avoid agent misinterpretation
+      const itemLines = cartItems.map(item => 
+        `- "${item.book.title}" by ${item.book.author}: QUANTITY=${item.quantity}, price=$${item.book.price.toFixed(2)} each, subtotal=$${(item.book.price * item.quantity).toFixed(2)}`
+      ).join('\n');
+      
+      const result = `CART CONTENTS:
+${itemLines}
+
+SUMMARY: ${cartItems.length} unique book(s), ${totalQuantity} total items, grand total=$${total.toFixed(2)}`;
+      
+      console.log('Cart info result:', result);
+      return result;
     },
     
     getAvailableBooks: () => {

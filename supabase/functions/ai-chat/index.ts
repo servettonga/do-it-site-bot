@@ -90,6 +90,8 @@ GUIDELINES:
 - The wishlist is for saving books users want to remember but aren't ready to purchase yet
 - When users say "save for later" or "add to wishlist", use wishlist actions
 - When users ask to "add all wishlist to cart" or "buy everything in wishlist", use add_wishlist_to_cart action
+- IMPORTANT: When users say "show me my cart", "let me see my cart", "go to cart", navigate to the cart page using navigate action with path "/cart"
+- IMPORTANT: When users say "show me my wishlist", "let me see my wishlist", navigate to "/wishlist"
 - IMPORTANT: When users ask to filter by price (e.g., "under $15", "less than $20"), ALWAYS include a filter action with the priceRange to actually apply the filter on the page
 - IMPORTANT: When filtering, ALWAYS return a filter action - don't just describe results, actually filter the page`;
 
