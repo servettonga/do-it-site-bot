@@ -26,7 +26,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { addItem, removeItem, clearCart, items: cartItems } = useCartStore();
+  const { addItem, removeItem, updateQuantity, clearCart, items: cartItems } = useCartStore();
 
   // Get current page context
   const getCurrentPageContext = useCallback(() => {
@@ -113,6 +113,22 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       clearCart();
       toast({ title: 'Cart Cleared', description: 'All items removed' });
       return "Cart has been cleared";
+    },
+    
+    updateCartQuantity: (params: { bookId: string; quantity: number }) => {
+      console.log('Updating quantity:', params.bookId, params.quantity);
+      const item = cartItems.find(i => i.book.id === params.bookId);
+      if (item) {
+        if (params.quantity <= 0) {
+          removeItem(params.bookId);
+          toast({ title: 'Removed', description: `"${item.book.title}" removed from cart` });
+          return `Removed "${item.book.title}" from cart`;
+        }
+        updateQuantity(params.bookId, params.quantity);
+        toast({ title: 'Updated', description: `"${item.book.title}" quantity set to ${params.quantity}` });
+        return `Updated "${item.book.title}" quantity to ${params.quantity}`;
+      }
+      return "Item not found in cart";
     },
     
     searchBooks: (params: { query: string }) => {
