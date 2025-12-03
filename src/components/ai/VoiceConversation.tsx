@@ -1,14 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useConversation } from '@11labs/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, VolumeX, PhoneOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, PhoneOff, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { AudioWaveform } from './AudioWaveform';
 import { useCartStore } from '@/stores/cartStore';
 import { getBookById, books } from '@/data/books';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface VoiceConversationProps {
   agentId: string;
@@ -20,9 +21,54 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [hasEnded, setHasEnded] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { addItem, removeItem, clearCart, items: cartItems } = useCartStore();
+
+  // Get current page context
+  const getCurrentPageContext = useCallback(() => {
+    const path = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+    
+    if (path === '/') {
+      return { page: 'home', description: 'User is on the home page viewing featured books and bestsellers' };
+    }
+    if (path === '/browse') {
+      const genre = searchParams.get('genre');
+      const search = searchParams.get('search');
+      return { 
+        page: 'browse', 
+        genre: genre || undefined,
+        search: search || undefined,
+        description: `User is browsing books${genre ? ` filtered by ${genre}` : ''}${search ? ` searching for "${search}"` : ''}`
+      };
+    }
+    if (path.startsWith('/book/')) {
+      const bookId = path.split('/book/')[1];
+      const book = getBookById(bookId);
+      if (book) {
+        return { 
+          page: 'book-detail', 
+          bookId,
+          bookTitle: book.title,
+          bookAuthor: book.author,
+          bookPrice: book.price,
+          bookGenre: book.genre,
+          description: `User is viewing "${book.title}" by ${book.author} ($${book.price})`
+        };
+      }
+    }
+    if (path === '/cart') {
+      return { page: 'cart', description: 'User is viewing their shopping cart' };
+    }
+    if (path === '/checkout') {
+      return { page: 'checkout', description: 'User is at checkout' };
+    }
+    return { page: 'unknown', path, description: `User is on ${path}` };
+  }, [location]);
 
   // Client tools that the ElevenLabs agent can call
   const clientTools = {
@@ -135,6 +181,25 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       console.log('Going home');
       navigate('/');
       return "Navigating to home page";
+    },
+    
+    getCurrentContext: () => {
+      const context = getCurrentPageContext();
+      console.log('Current context:', context);
+      return JSON.stringify(context);
+    },
+    
+    addCurrentBookToCart: () => {
+      const context = getCurrentPageContext();
+      if (context.page === 'book-detail' && context.bookId) {
+        const book = getBookById(context.bookId);
+        if (book) {
+          addItem(book, 1);
+          toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
+          return `Added "${book.title}" to cart`;
+        }
+      }
+      return "No book currently being viewed. Please navigate to a book detail page first.";
     }
   };
 
@@ -150,6 +215,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     onDisconnect: () => {
       console.log('Disconnected from ElevenLabs');
+      setHasEnded(true);
       toast({
         title: 'Disconnected',
         description: 'Voice conversation ended.',
@@ -157,11 +223,13 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     onMessage: (message) => {
       console.log('Message received:', message);
-      if (onMessage && message.message) {
-        onMessage({
+      if (message.message) {
+        const newMsg = {
           role: message.source === 'user' ? 'user' : 'assistant',
           content: message.message,
-        });
+        };
+        setConversationHistory(prev => [...prev, newMsg]);
+        onMessage?.(newMsg);
       }
     },
     onError: (error) => {
@@ -208,8 +276,13 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
 
   const endConversation = useCallback(async () => {
     await conversation.endSession();
-    onClose?.();
-  }, [conversation, onClose]);
+  }, [conversation]);
+
+  const restartConversation = useCallback(() => {
+    setHasEnded(false);
+    setConversationHistory([]);
+    startConversation();
+  }, [startConversation]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(!isMuted);
@@ -224,6 +297,44 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
 
   const isConnected = conversation.status === 'connected';
   const isSpeaking = conversation.isSpeaking;
+
+  // Show conversation history after ended
+  if (hasEnded && conversationHistory.length > 0) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="text-center py-2 border-b border-border/50">
+          <span className="text-sm text-muted-foreground">Conversation ended</span>
+        </div>
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-3">
+            {conversationHistory.map((msg, i) => (
+              <div
+                key={i}
+                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+              >
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-4 py-2.5",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
+                  )}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="p-4 border-t border-border/50">
+          <Button onClick={restartConversation} className="w-full gap-2">
+            <RotateCcw className="w-4 h-4" />
+            Start New Conversation
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-4 p-6">
@@ -246,7 +357,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
               ? isSpeaking
                 ? 'Assistant speaking...'
                 : 'Listening...'
-              : 'Not connected'}
+              : 'Ready to connect'}
         </span>
       </div>
 
@@ -273,7 +384,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
             className="h-12"
           />
         ) : (
-          <MicOff className="w-10 h-10 text-muted-foreground" />
+          <Mic className="w-10 h-10 text-muted-foreground" />
         )}
       </div>
 
