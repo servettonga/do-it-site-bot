@@ -5,6 +5,7 @@ import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, Loader2 } from 'lucide-
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { AudioWaveform } from './AudioWaveform';
 
 interface VoiceConversationProps {
   agentId: string;
@@ -110,35 +111,46 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         <div
           className={cn(
             'w-2 h-2 rounded-full',
-            isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted'
+            isConnecting 
+              ? 'bg-amber-500 animate-pulse' 
+              : isConnected 
+                ? 'bg-green-500 animate-pulse' 
+                : 'bg-muted'
           )}
         />
         <span>
-          {isConnected
-            ? isSpeaking
-              ? 'Assistant speaking...'
-              : 'Listening...'
-            : 'Not connected'}
+          {isConnecting
+            ? 'Connecting...'
+            : isConnected
+              ? isSpeaking
+                ? 'Assistant speaking...'
+                : 'Listening...'
+              : 'Not connected'}
         </span>
       </div>
 
-      {/* Voice visualization */}
+      {/* Voice visualization with waveform */}
       <div
         className={cn(
-          'w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300',
-          isConnected
-            ? isSpeaking
-              ? 'bg-primary/20 ring-4 ring-primary/40 animate-pulse'
-              : 'bg-secondary ring-2 ring-primary/20'
-            : 'bg-muted'
+          'w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300',
+          isConnecting
+            ? 'bg-amber-500/10 ring-2 ring-amber-500/30'
+            : isConnected
+              ? isSpeaking
+                ? 'bg-primary/20 ring-4 ring-primary/40'
+                : 'bg-secondary ring-2 ring-primary/20'
+              : 'bg-muted'
         )}
       >
-        {isConnected ? (
-          isSpeaking ? (
-            <Volume2 className="w-10 h-10 text-primary" />
-          ) : (
-            <Mic className="w-10 h-10 text-primary animate-pulse" />
-          )
+        {isConnecting ? (
+          <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+        ) : isConnected ? (
+          <AudioWaveform 
+            isActive={true} 
+            isSpeaking={isSpeaking} 
+            barCount={7}
+            className="h-12"
+          />
         ) : (
           <MicOff className="w-10 h-10 text-muted-foreground" />
         )}
