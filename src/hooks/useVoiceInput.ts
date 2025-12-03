@@ -83,6 +83,11 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
   
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  
+  // Check if it's a well-supported browser (Chrome/Edge)
+  const isChromium = typeof window !== 'undefined' && 
+    /Chrome|Chromium|Edg/.test(navigator.userAgent) && 
+    !/OPR/.test(navigator.userAgent);
 
   useEffect(() => {
     if (!isSupported) return;
@@ -142,10 +147,13 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
             errorMessage = 'Microphone access denied. Please allow microphone access.';
             break;
           case 'network':
-            errorMessage = 'Network error. Please check your connection.';
+            errorMessage = 'Voice input requires Chrome or Edge browser with a stable internet connection.';
+            break;
+          case 'service-not-allowed':
+            errorMessage = 'Voice input is not available in this browser. Please use Chrome or Edge.';
             break;
           default:
-            errorMessage = `Error: ${event.error}`;
+            errorMessage = `Voice error: ${event.error}. Try using Chrome or Edge.`;
         }
         onErrorRef.current(errorMessage);
       }
@@ -166,8 +174,12 @@ export function useVoiceInput(options: UseVoiceInputOptions = {}): UseVoiceInput
 
   const startListening = useCallback(() => {
     if (!isSupported || !recognitionRef.current) {
-      onErrorRef.current?.('Speech recognition is not supported in this browser.');
+      onErrorRef.current?.('Voice input requires Chrome or Edge browser.');
       return;
+    }
+    
+    if (!isChromium) {
+      onErrorRef.current?.('Voice input works best in Chrome or Edge. Other browsers may have limited support.');
     }
 
     setTranscript('');
