@@ -20,9 +20,23 @@ export function ChatWidget() {
   const [inputValue, setInputValue] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [mode, setMode] = useState<"voice" | "text">("voice");
+  const [showNotification, setShowNotification] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Hide notification after opening chat or after timeout
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowNotification(false);
+    }, 10000); // Hide after 10 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
   const { messages, isChatOpen, isProcessing, toggleChat, addMessage } = useAIStore();
+
+  const handleToggleChat = () => {
+    setShowNotification(false);
+    toggleChat();
+  };
 
   const { sendMessage, isLoading } = useAIChat();
 
@@ -137,9 +151,24 @@ export function ChatWidget() {
 
   return (
     <>
+      {/* Notification bubble */}
+      {showNotification && !isChatOpen && (
+        <div 
+          className={cn(
+            "fixed bottom-[5.5rem] right-6 z-50",
+            "bg-card border border-border rounded-2xl shadow-lg px-4 py-3",
+            "animate-fade-in",
+            "max-w-[200px]"
+          )}
+        >
+          <p className="text-sm text-foreground font-medium">May I help you? 👋</p>
+          <div className="absolute -bottom-2 right-8 w-4 h-4 bg-card border-b border-r border-border rotate-45" />
+        </div>
+      )}
+
       {/* Voice Assistant Toggle Button - Siri-like */}
       <button
-        onClick={toggleChat}
+        onClick={handleToggleChat}
         className={cn(
           "fixed bottom-6 right-6 z-50 h-16 w-16 rounded-full",
           "bg-gradient-to-br from-primary via-primary to-accent",
@@ -182,7 +211,7 @@ export function ChatWidget() {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleChat} className="h-8 w-8 rounded-full">
+          <Button variant="ghost" size="icon" onClick={handleToggleChat} className="h-8 w-8 rounded-full">
             <X className="h-4 w-4" />
           </Button>
         </div>
