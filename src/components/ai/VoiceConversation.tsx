@@ -209,12 +209,12 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
           ) : isConnected ? (
             <>
               <PhoneOff className="w-4 h-4" />
-              End Call
+              End Conversation
             </>
           ) : (
             <>
-              <Phone className="w-4 h-4" />
-              Start Voice Call
+              <Mic className="w-4 h-4" />
+              Start Conversation
             </>
           )}
         </Button>
