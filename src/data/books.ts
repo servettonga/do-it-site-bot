@@ -26,7 +26,7 @@ export const books: Book[] = [
     author: 'Delia Owens',
     price: 14.99,
     description: 'A gorgeous and haunting coming-of-age story about a young woman who raised herself in the marshes of North Carolina.',
-    coverImage: 'https://images.unsplash.com/photo-1518173946687-a4c036bc2d71?w=400&h=600&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=600&fit=crop',
     genre: 'fiction',
     rating: 4.7,
     reviewCount: 5621,
