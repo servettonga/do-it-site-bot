@@ -68,8 +68,8 @@ export default function BookDetail() {
     }
   };
 
-  // Use Google Books cover if available, otherwise fallback
-  const coverImage = enrichedData?.coverImage || book.coverImage;
+  // Use Google Books cover if available, no fallback to random images
+  const coverImage = enrichedData?.coverImage || '';
   // Use Google Books description if available and longer
   const description = (enrichedData?.description && enrichedData.description.length > book.description.length) 
     ? enrichedData.description 

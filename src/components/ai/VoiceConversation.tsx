@@ -239,6 +239,8 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
         author: b.author,
         price: b.price,
         genre: b.genre,
+        rating: b.rating,
+        reviewCount: b.reviewCount,
         inStock: b.inStock
       }));
       
@@ -322,6 +324,8 @@ SUMMARY: ${cartItems.length} unique book(s), ${totalQuantity} total items, grand
         author: b.author,
         genre: b.genre,
         price: b.price,
+        rating: b.rating,
+        reviewCount: b.reviewCount,
         inStock: b.inStock
       }));
       console.log('Available books:', bookList.length);

@@ -55,7 +55,8 @@ export function useBookCover(isbn: string, fallbackImage: string): {
   const { enrichedData, isLoading } = useBookEnrichment(isbn);
   
   return {
-    coverImage: enrichedData?.coverImage || fallbackImage,
+    // Only use enriched cover, no fallback to random images
+    coverImage: enrichedData?.coverImage || '',
     isLoading,
   };
 }

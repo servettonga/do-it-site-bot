@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { BookImage } from '@/components/books/BookImage';
 import { books } from '@/data/books';
 import { cn } from '@/lib/utils';
 
@@ -95,10 +96,11 @@ export function SearchBar({ className, onClose, autoFocus = false }: SearchBarPr
               onClick={() => handleSelect(book.id)}
               className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
             >
-              <img
+              <BookImage
                 src={book.coverImage}
-                alt={book.title}
-                className="w-10 h-14 object-cover rounded"
+                title={book.title}
+                author={book.author}
+                className="w-10 h-14 rounded"
               />
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{book.title}</p>
