@@ -113,7 +113,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     addToCartByTitle: (params: { title: string; quantity?: number }) => {
-      console.log('Adding to cart by title:', params.title);
+      console.log('⚠️ addToCartByTitle CALLED (this ADDS, not replaces):', params.title, 'qty:', params.quantity);
       const searchTitle = params.title.toLowerCase();
       const book = books.find(b => 
         b.title.toLowerCase().includes(searchTitle) ||
@@ -177,7 +177,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     updateCartQuantityByTitle: (params: { title: string; quantity: number }) => {
-      console.log('Updating quantity by title:', params.title, 'to quantity:', params.quantity, 'type:', typeof params.quantity);
+      console.log('✅ updateCartQuantityByTitle CALLED (this REPLACES quantity):', params.title, 'new qty:', params.quantity);
       
       // Ensure quantity is a valid number
       const newQuantity = Number(params.quantity);
