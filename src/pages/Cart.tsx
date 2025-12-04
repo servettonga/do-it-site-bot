@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/stores/cartStore';
+import { BookImage } from '@/components/books/BookImage';
 import { toast } from 'sonner';
 
 export default function Cart() {
@@ -73,10 +74,11 @@ export default function Cart() {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link to={`/book/${book.id}`} className="shrink-0">
-                      <img
+                      <BookImage
                         src={book.coverImage}
-                        alt={book.title}
-                        className="w-20 h-28 object-cover rounded-md"
+                        title={book.title}
+                        author={book.author}
+                        className="w-20 h-28 rounded-md"
                       />
                     </Link>
                     

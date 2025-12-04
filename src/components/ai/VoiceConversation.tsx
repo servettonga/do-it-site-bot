@@ -78,6 +78,21 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     return { page: 'unknown', path, description: `User is on ${path}` };
   }, []);
 
+  // Debug wrapper to log ALL tool calls from ElevenLabs
+  const wrapTool = <T extends (...args: any[]) => any>(name: string, fn: T): T => {
+    return ((...args: any[]) => {
+      console.log(`🔧 TOOL CALLED: ${name}`, JSON.stringify(args, null, 2));
+      try {
+        const result = fn(...args);
+        console.log(`🔧 TOOL RESULT: ${name}`, result);
+        return result;
+      } catch (err) {
+        console.error(`🔧 TOOL ERROR: ${name}`, err);
+        throw err;
+      }
+    }) as T;
+  };
+
   // Client tools that the ElevenLabs agent can call - memoized to prevent recreation
   const clientTools = useMemo(() => ({
     navigate: (params: { path: string }) => {
@@ -113,7 +128,7 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     addToCartByTitle: (params: { title: string; quantity?: number }) => {
-      console.log('⚠️ addToCartByTitle CALLED (this ADDS, not replaces):', params.title, 'qty:', params.quantity);
+      console.log('addToCartByTitle:', params.title, 'qty:', params.quantity);
       const searchTitle = params.title.toLowerCase();
       const book = books.find(b => 
         b.title.toLowerCase().includes(searchTitle) ||
@@ -121,10 +136,8 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
       );
       if (book) {
         useCartStore.getState().addItem(book, params.quantity || 1);
-        const cartAfter = useCartStore.getState();
-        console.log('Cart after add:', cartAfter.items.length, 'items');
         toast({ title: 'Added to Cart', description: `${book.title} added to your cart` });
-        return `Added "${book.title}" to cart. Cart now has ${cartAfter.items.length} item(s).`;
+        return `Added "${book.title}" to cart.`;
       }
       return `Could not find book "${params.title}" in catalog`;
     },
@@ -177,7 +190,8 @@ export function VoiceConversation({ agentId, onMessage, onClose }: VoiceConversa
     },
     
     updateCartQuantityByTitle: (params: { title: string; quantity: number }) => {
-      console.log('✅ updateCartQuantityByTitle CALLED (this REPLACES quantity):', params.title, 'new qty:', params.quantity);
+      console.log('updateCartQuantityByTitle:', params.title, 'qty:', params.quantity);
+      toast({ title: 'Updating Cart', description: `Setting ${params.title} to ${params.quantity}` });
       
       // Ensure quantity is a valid number
       const newQuantity = Number(params.quantity);
@@ -648,6 +662,7 @@ SUMMARY: ${cartItems.length} unique book(s), ${totalQuantity} total items, grand
       }
       
       // Start the conversation with signed URL
+      console.log('Starting conversation with clientTools:', Object.keys(clientTools));
       await conversation.startSession({
         signedUrl: data.signedUrl,
       });

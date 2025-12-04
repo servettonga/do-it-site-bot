@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { Book, genreLabels } from '@/types/book';
@@ -7,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { useBookCover } from '@/hooks/useBookEnrichment';
+import { BookPlaceholder } from './BookPlaceholder';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +18,7 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, className }: BookCardProps) {
+  const [imageError, setImageError] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const isWishlisted = isInWishlist(book.id);
@@ -40,6 +43,8 @@ export function BookCard({ book, className }: BookCardProps) {
     }
   };
 
+  const showPlaceholder = imageError || !coverImage;
+
   return (
     <Link to={`/book/${book.id}`}>
       <Card className={cn(
@@ -47,11 +52,16 @@ export function BookCard({ book, className }: BookCardProps) {
         className
       )}>
         <div className="relative aspect-[2/3] overflow-hidden bg-muted">
-          <img
-            src={coverImage}
-            alt={book.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+          {showPlaceholder ? (
+            <BookPlaceholder title={book.title} author={book.author} />
+          ) : (
+            <img
+              src={coverImage}
+              alt={book.title}
+              onError={() => setImageError(true)}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          )}
           {/* Wishlist Button */}
           <Button
             size="icon"

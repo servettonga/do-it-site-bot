@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useToast } from '@/hooks/use-toast';
+import { BookImage } from '@/components/books/BookImage';
 
 export default function Wishlist() {
   const { items, removeItem, clearWishlist } = useWishlistStore();
@@ -64,10 +65,11 @@ export default function Wishlist() {
               className="flex gap-4 p-4 bg-card border border-border rounded-lg"
             >
               <Link to={`/book/${book.id}`}>
-                <img
+                <BookImage
                   src={book.coverImage}
-                  alt={book.title}
-                  className="w-20 h-28 object-cover rounded"
+                  title={book.title}
+                  author={book.author}
+                  className="w-20 h-28 rounded"
                 />
               </Link>
               <div className="flex-1 min-w-0">

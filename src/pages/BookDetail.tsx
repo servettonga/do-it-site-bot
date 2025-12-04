@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookGrid } from '@/components/books/BookGrid';
+import { BookPlaceholder } from '@/components/books/BookPlaceholder';
 import { getBookById, getBooksByGenre } from '@/data/books';
 import { genreLabels } from '@/types/book';
 import { useCartStore } from '@/stores/cartStore';
@@ -21,6 +22,7 @@ export default function BookDetail() {
   const addItem = useCartStore((state) => state.addItem);
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const [quantity, setQuantity] = useState(1);
+  const [imageError, setImageError] = useState(false);
   
   // Fetch real book data from Google Books API
   const { enrichedData, isLoading: isLoadingEnriched } = useBookEnrichment(book?.isbn || '');
@@ -100,14 +102,19 @@ export default function BookDetail() {
               {isLoadingEnriched && (
                 <Skeleton className="absolute inset-0" />
               )}
-              <img
-                src={coverImage}
-                alt={book.title}
-                className={cn(
-                  "h-full w-full object-cover transition-opacity duration-300",
-                  isLoadingEnriched && "opacity-50"
-                )}
-              />
+              {imageError || !coverImage ? (
+                <BookPlaceholder title={book.title} author={book.author} />
+              ) : (
+                <img
+                  src={coverImage}
+                  alt={book.title}
+                  onError={() => setImageError(true)}
+                  className={cn(
+                    "h-full w-full object-cover transition-opacity duration-300",
+                    isLoadingEnriched && "opacity-50"
+                  )}
+                />
+              )}
             </div>
             {book.bestseller && (
               <Badge className="absolute top-4 left-4 bg-accent text-accent-foreground">
